@@ -1,1 +1,2 @@
-En esta carpeta se realizara la practica 1
+# practica 1
+En esta carpeta se realizará la practica 1
