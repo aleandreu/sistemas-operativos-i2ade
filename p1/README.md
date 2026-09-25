@@ -1,2 +1,2 @@
 # practica 1
-En esta carpeta se realizará la practica 1
+En este directorio se realizara la practica 1.
