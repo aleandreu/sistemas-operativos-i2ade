@@ -5,7 +5,23 @@
 #include <stdlib.h> // exit, atoi, malloc, free
 #include <sys/wait.h> // wait, waitpid, macros WEXITSTATUS, WIFEXITED
 
-int main() {
+int leerArgumento(int nArgs, char *args[]) {
+    int tiempo;
+
+    if (nArgs != 2) {
+        printf("Error. Debes introducir argumento de tiempo\n");
+        exit(1);
+    }
+    else {
+        tiempo = atoi(args[1]);
+    }
+
+    return tiempo;
+}
+
+int main(int argc, char *argv[]) {
+
+    int tiempo = leerArgumento(argc,argv);
     
     pid_t pidA;
     pidA = fork();
