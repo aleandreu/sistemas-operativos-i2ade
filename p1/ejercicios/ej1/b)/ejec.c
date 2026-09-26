@@ -3,7 +3,10 @@
 #include <unistd.h> // fork, getpid, getppid, exec*, read, write, close, pause, sleep
 #include <stdio.h>  // printf, perror
 #include <stdlib.h> // exit, atoi, malloc, free
+#include <signal.h>     // signal, kill, SIGUSR1, SIGALRM, alarm
 #include <sys/wait.h> // wait, waitpid, macros WEXITSTATUS, WIFEXITED
+
+pid_t pidA; // VARIABLE GLOBAL: para que la conozca manejadorZ
 
 int leerArgumento(int nArgs, char *args[]) {
     int tiempo;
@@ -19,11 +22,19 @@ int leerArgumento(int nArgs, char *args[]) {
     return tiempo;
 }
 
+void manejadorZ(int sig) {
+    kill(pidA, SIGUSR1);
+}
+
+void manejadorA(int sig) {
+    char *args[] = {"pstree", NULL};
+    execvp("pstree", args);
+}
+
 int main(int argc, char *argv[]) {
 
     int tiempo = leerArgumento(argc,argv);
     
-    pid_t pidA;
     pidA = fork();
     if (pidA == -1) {
         perror("Error en fork");
@@ -45,7 +56,10 @@ int main(int argc, char *argv[]) {
     if (pidB != 0) {
         // A
         printf("Soy el proceso A: mi pid es %d. Mi padre es %d\n", getpid(), getppid());
-        wait(NULL);
+
+        signal(SIGUSR1, manejadorA);
+        pause();   // esperar señal de Z
+
         exit(0);
     }
 
@@ -87,6 +101,11 @@ int main(int argc, char *argv[]) {
     if (pidZ == 0) {
         // Z
         printf("Soy el proceso Z: mi pid es %d. Mi padre es %d\n", getpid(), getppid());
+        
+        signal(SIGALRM, manejadorZ);
+        alarm(tiempo);
+        pause();
+        
         exit(0);
     }
 
