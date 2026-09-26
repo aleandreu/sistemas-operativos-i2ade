@@ -41,9 +41,10 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     if (pidA != 0) {
-        // arb
+        // ejec
         printf("Soy el proceso ejec: mi pid es %d\n", getpid());
         wait(NULL);
+        printf("Soy ejec(%d) y muero\n", getpid());
         exit(0);
     }
 
@@ -60,6 +61,7 @@ int main(int argc, char *argv[]) {
         signal(SIGUSR1, manejadorA);
         pause();   // esperar señal de Z
 
+        printf("Soy A(%d) y muero\n", getpid());
         exit(0);
     }
 
@@ -77,6 +79,8 @@ int main(int argc, char *argv[]) {
     if (pidX == 0) {
         // X
         printf("Soy el proceso X: mi pid es %d. Mi padre es %d\n", getpid(), getppid());
+
+        printf("Soy X(%d) y muero\n", getpid());
         exit(0);
     }
 
@@ -89,6 +93,8 @@ int main(int argc, char *argv[]) {
     if (pidY == 0) {
         // Y
         printf("Soy el proceso Y: mi pid es %d. Mi padre es %d\n", getpid(), getppid());
+
+        printf("Soy Y(%d) y muero\n", getpid());
         exit(0);
     }
 
@@ -106,6 +112,7 @@ int main(int argc, char *argv[]) {
         alarm(tiempo);
         pause();
         
+        printf("\nSoy Z(%d) y muero\n", getpid());
         exit(0);
     }
 
@@ -113,6 +120,9 @@ int main(int argc, char *argv[]) {
     wait(NULL);
     wait(NULL);
     wait(NULL);
+
+    printf("Soy B(%d) y muero\n", getpid());
+    exit(0);
 
 
     printf("Final de la ejecución\n");
