@@ -6,7 +6,8 @@
 #include <sys/types.h>  // pid_t, tipos para procesos y memoria compartida
 #include <signal.h>     // signal, kill, SIGUSR1, SIGALRM, alarm
 #include <sys/wait.h> // wait, waitpid, macros WEXITSTATUS, WIFEXITED
-// PREGUNTAR A ALEJANDRO PAUSE() EN X,Y
+
+// PREGUNTAR A ALEJANDRO SLEEP() EN X,Y + QUE Z SE IMPRIMA ANTES
 pid_t pidA; // Variable global para que tenga acceso a ella el manejadorZ
 
 int leerArgumento(int nArgs, char *args[]) {
@@ -28,6 +29,7 @@ void manejadorA(int sig) {
         execlp("pstree","pstree",NULL);
         exit(1);
     }
+    wait(NULL); // Para que A espere a que termine pstree
 }
 
 void manejadorZ(int sig) { // Necesito manejador para que Z no muera antes de enviar la señal
@@ -71,6 +73,7 @@ int main(int argc, char *argv[]) {
         
         signal(SIGUSR1, manejadorA); // CAPTURA DE SEÑAL
         pause(); // Esperar señal de Z
+        wait(NULL); // Espera a que termine B
 
         printf("Soy A(%d) y muero\n", getpid());
         exit(0);
