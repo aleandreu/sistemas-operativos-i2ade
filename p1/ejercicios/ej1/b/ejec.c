@@ -8,7 +8,12 @@
 #include <sys/wait.h> // wait, waitpid, macros WEXITSTATUS, WIFEXITED
 
 // PREGUNTAR A ALEJANDRO SLEEP() EN X,Y + QUE Z SE IMPRIMA ANTES
-pid_t pidA; // Variable global para que tenga acceso a ella el manejadorZ
+
+// Tengo que corregir que la muerte de se haga primero, luego X e Y con pause()
+    // A cuando acaba el pstree manda una señal a ejec
+    // ejec, A y B esperan con wait --> B hace kill de Z, X e Y
+
+pid_t pidA; // Variables globales para que los manejadores tengan acceso a ellos
 
 int leerArgumento(int nArgs, char *args[]) {
     int tiempo;

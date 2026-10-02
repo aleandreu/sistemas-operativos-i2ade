@@ -31,9 +31,13 @@ int main(int argc, char *argv[]) {
     pid_t pid = fork();
     /* Ahora cuando el padre crea el hijo, el hijo verá todo lo que vea el padre 
     (porque la tubería la he creado antes de crear al hijo, si no, este no vería la información) */
+    
     if (pid > 0) {
         // PADRE
         int fd = open(nombre, O_RDONLY);
+        int tam = 0;
+        char buffer[1];
+        int leidos;
 
         if (fd < 0) {
             perror("Error al abrir el archivo");
@@ -42,13 +46,23 @@ int main(int argc, char *argv[]) {
 
         close(tub[0]); // tub[0] = leer la tubería
 
-        char buffer[1];
-        int leidos;
-
         while ( read(fd,buffer,1) > 0 ) {
             write(tub[1],buffer,1); // Mientras va leyendo va escribiendo
         }
     }
+    else if (pid == -1) {
+        perror("Error en el fork");
+        exit(1);
+    }
+    else {
+        // HIJO (ve todo lo que hace el padre)
+        close(tub[1]); // tub[1] = escribir en la tubería (EL HIJO NO ESCRIBE)
+
+    
+        // for (i --> numero)
+            // aqui creo el pipe
+            // y hago  fork
+            // segundo bucle for (.. -> ) -- controlo que se envie cada 100 bytes 
 
 
     return 0;

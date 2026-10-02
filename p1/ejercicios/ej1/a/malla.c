@@ -5,6 +5,9 @@
 #include <unistd.h> // fork, getpid, getppid, exec*, read, write, close, pause, sleep
 #include <sys/wait.h> // wait, waitpid, macros WEXITSTATUS, WIFEXITED
 
+// Tengo que corregir la muerte de los hijos:
+    // primero mueren en vertical
+    // al final, muere toda la primera fila y por ultimo el superpadre
 void leerArgumentos(int nArgs, char *args[], int *x, int *y) {
     if (nArgs != 3 || atoi(args[1]) < 1 || atoi(args[2]) < 1) {
         printf("Error. Debes introducir un número válido de argumentos que sean > 0 \n");
