@@ -27,10 +27,13 @@ void creaHorizontal(int ncolumnas) { // crear filas
     }
 }
 
-void creaVertical(int nfilas) { // crear columnas
-    for (int i=1; i<nfilas; i++) {
+void creaVertical(int nfilas, int ncolumnas) { // crear columnas
+    for (int i=0; i<nfilas; i++) {
         if (fork() > 0) {
             break; // PADRE
+        }
+        if (i == nfilas-1) {
+            creaHorizontal(ncolumnas);
         }
     }
 }
@@ -42,5 +45,9 @@ int main(int argc, char *argv[]) {
     leerArgumentos(argc, argv, &x, &y);
 
     printf("x: %d, y: %d\n", x, y);
+
+    creaVertical(x,y);
+
+    sleep(10);
 
 }
