@@ -1,10 +1,10 @@
 // Ejercicio 1. b) ejec.c
 
 #include <unistd.h> // fork, getpid, getppid, exec*, read, write, close, pause, sleep
-#include <stdio.h>  // printf, perror
+#include <stdio.h> // printf, perror
 #include <stdlib.h> // exit, atoi, malloc, free
-#include <sys/types.h>  // pid_t, tipos para procesos y memoria compartida
-#include <signal.h>     // signal, kill, SIGUSR1, SIGALRM, alarm
+#include <sys/types.h> // pid_t, tipos para procesos y memoria compartida
+#include <signal.h> // signal, kill, SIGUSR1, SIGALRM, alarm
 #include <sys/wait.h> // wait, waitpid, macros WEXITSTATUS, WIFEXITED
 
 pid_t pidEjec, pidA, pidB, pidX, pidY, pidZ; // Variables globales para que los manejadores tengan acceso a ellas

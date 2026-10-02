@@ -19,7 +19,7 @@ void leerArgumentos(int nArgs, char *args[], int *x, int *y) {
     }
 }
 
-void creaHorizontal(int ncolumnas) {
+void creaHorizontal(int ncolumnas) { // crear filas
     for (int i=0; i<ncolumnas; i++) {
         if (fork() == 0) { // HIJO
             break;
@@ -27,7 +27,7 @@ void creaHorizontal(int ncolumnas) {
     }
 }
 
-void creaVertical(int nfilas) {
+void creaVertical(int nfilas) { // crear columnas
     for (int i=1; i<nfilas; i++) {
         if (fork() > 0) {
             break; // PADRE
@@ -43,14 +43,14 @@ int main(int argc, char *argv[]) {
     pid_t pidMalla = getpid();
     
     creaHorizontal(ncolumnas); // La malla crea la primera fila (hijos)
-
+    
     if (getpid() != pidMalla) {
         creaVertical(nfilas); // Cada hijo crea su columna
     }
 
-    sleep(30); //  Para poder ver pstree -c
-    
-    while (wait(NULL) > 0); // Para que los hijos mueran primero
+    sleep(10); //  Para poder ver pstree -c
 
-    return 0;
+    if (getpid() == pidMalla || getppid() == pidMalla) {
+        while (wait(NULL) > 0);
+    }
 }
