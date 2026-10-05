@@ -71,6 +71,25 @@ int main(int argc, char *argv[]) {
         }
         else if (pid > 0) { // PADRE QUE CREA HIJOS
             close(tub[0]); // cierro la parte de lectura de la tubería (PADRE NO LEE)
+
+            long bytesRestantes = tamArchivo - i * tamañoFragmento;
+
+            int bytesEnviar;
+            if (bytesRestantes >= tamañoFragmento) {
+                bytesEnviar = tamañoFragmento; // mando al pipe un fragmento
+            }
+            else {
+                bytesEnviar = bytesRestantes; // mando al pipe el restante (que es menor al tamaño de los fragmentos)
+            }
+
+            char buffer[1]; // envío bytes uno a uno
+
+            for (int i=0; i<bytesEnviar; i++) {
+                read(fd,buffer,1); // leo lo que tengo que enviar
+                write(tub[1],buffer,1); // escribo en la tubería lo que acabo de leer
+            }
+            
+            close(tub[1]);
         }
         else { // HIJOS
             close(tub[1]); // cierro la parte de escritura de la tubería (HIJO NO ESCRIBE)
