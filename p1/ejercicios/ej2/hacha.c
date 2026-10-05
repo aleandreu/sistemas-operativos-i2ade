@@ -6,6 +6,7 @@
 #include <fcntl.h> // open, creat, O_RDONLY, O_WRONLY, O_CREAT, O_APPEND
 #include <sys/types.h> // pid_t, tipos básicos
 #include <sys/stat.h> // stat
+#include <sys/wait.h> // wait, waitpid, macros WEXITSTATUS, WIFEXITED
 
 void leerArgumentos(int nArgs, char *argv[], char **nombre, int *tam) {
     if (nArgs != 3) {
@@ -36,10 +37,10 @@ int main(int argc, char *argv[]) {
     else if (pid == 0) { // HIJO
         exit(0); // No hago nada
     }
-    //PADRE INICAL
+    // PADRE INICAL
 
     struct stat infoArchivo;
-    stat(nombre, &infoArchivo); // Stat (datos) del archivo origen
+    stat(nombre, &infoArchivo); // Stat (datos) del archivo origen (para saber qué tamaño tiene el archivo)
 
     long tamArchivo = infoArchivo.st_size; // tamaño del archivo origen
 
@@ -52,8 +53,8 @@ int main(int argc, char *argv[]) {
     /* Ahora cuando el padre crea el hijo, el hijo verá todo lo que vea el padre 
     (porque la tubería la he creado antes de crear al hijo, si no, este no vería la información) */
 
-    int fd = open(nombre, O_RDONLY);
-    if (fd < 0) {
+    int fdOrigen = open(nombre, O_RDONLY);
+    if (fdOrigen < 0) {
         perror("Error al abrir el archivo");
         exit(1);
     }
@@ -85,10 +86,10 @@ int main(int argc, char *argv[]) {
             char buffer[1]; // envío bytes uno a uno
 
             for (int i=0; i<bytesEnviar; i++) {
-                read(fd,buffer,1); // leo lo que tengo que enviar
+                read(fdOrigen,buffer,1); // leo lo que tengo que enviar
                 write(tub[1],buffer,1); // escribo en la tubería lo que acabo de leer
             }
-            
+
             close(tub[1]);
         }
         else { // HIJOS
@@ -106,14 +107,16 @@ int main(int argc, char *argv[]) {
                 perror("Error al crear el archivo destino");
             }
 
-            while ( read(fd,buffer,1) > 0 ) {
-                write(tub[1],buffer,1); // Mientras va leyendo va escribiendo
+            
+            while (read(tub[0],buffer,1) > 0) { // hijo recibe los bytes del padre (el FRAGMENTO enviado en el pipe)
+                write(fdDestino,buffer,1); // Mientras va leyendo va escribiendo en el fichero destino
             }
+
+            close(fdDestino);
+            close(tub[0]);
+            exit(0); // pasamos al siguiente hijo (fragmento del archivo)
         }   
     }
+
+    while (wait(NULL) > 0); // Para que los hijos mueran antes que el padre
 }
-    // NOTAS DE ALEJANDRO EN CLASE
-            // for (i --> numero)
-            // aqui creo el pipe
-            // y hago  fork
-            // segundo bucle for (.. -> ) -- controlo que se envie cada 100 bytes
