@@ -29,18 +29,12 @@ int main(int argc, char *argv[]) {
 
     printf("nombre = %s tamaño = %d\n", nombre, tamañoFragmento);
 
-    pid_t pid = fork();
-    if (pid == -1) {
-        perror("Error en el fork padre");
-        exit(1);
-    }
-    else if (pid == 0) { // HIJO
-        exit(0); // No hago nada
-    }
-    // PADRE INICAL
-
+    // Stat (datos) del archivo origen (para saber qué tamaño tiene el archivo)
     struct stat infoArchivo;
-    stat(nombre, &infoArchivo); // Stat (datos) del archivo origen (para saber qué tamaño tiene el archivo)
+    if ( stat(nombre, &infoArchivo) == -1 ) { // Compruebo que no tenga errores
+        perror("Error en stat"); 
+        exit(1);
+    } 
 
     long tamArchivo = infoArchivo.st_size; // tamaño del archivo origen
 
@@ -61,7 +55,11 @@ int main(int argc, char *argv[]) {
 
     for (int i=0; i<numHijos; i++) {
         int tub[2];
-        pipe(tub); // creo la tubería
+        // creo la tubería
+        if ( pipe(tub) == -1 ) { // Compruebo que no tenga errores
+            perror("Error en pipe");
+            exit(1);
+        } 
             // tub[0] = LEER la tubería
             // tub[1] = ESCRIBIR en la tubería
 
@@ -94,9 +92,9 @@ int main(int argc, char *argv[]) {
         }
         else { // HIJOS
             close(tub[1]); // cierro la parte de escritura de la tubería (HIJO NO ESCRIBE)
-
+            close(fdOrigen);  // El hijo no utiliza el archivo original
+            
             char buffer[1];
-            int leidos;
 
             char nombreDestino[200];
             sprintf(nombreDestino,"%s.h%02d",nombre,i); // %s: inserta una cadena || %02d: inserta un entero con dos dígitos
@@ -105,9 +103,10 @@ int main(int argc, char *argv[]) {
 
             if (fdDestino < 0) {
                 perror("Error al crear el archivo destino");
+                close(tub[0]);
+                exit(EXIT_FAILURE);
             }
 
-            
             while (read(tub[0],buffer,1) > 0) { // hijo recibe los bytes del padre (el FRAGMENTO enviado en el pipe)
                 write(fdDestino,buffer,1); // Mientras va leyendo va escribiendo en el fichero destino
             }
@@ -118,5 +117,7 @@ int main(int argc, char *argv[]) {
         }   
     }
 
+    close(fdOrigen); // Cierro el archivo
+    
     while (wait(NULL) > 0); // Para que los hijos mueran antes que el padre
 }
