@@ -21,6 +21,40 @@ void leerArgumentos(int nArgs, char *argv[], char **nombre, int *tam) {
     *tam = atoi(argv[2]);
 }
 
+void enviarFragmento(int fdOrigen, int tuberia, long bytesEnviar) {
+    char buffer[1]; // envío bytes uno a uno
+
+    for (long i=0; i<bytesEnviar; i++) {
+        read(fdOrigen,buffer,1); // leo lo que tengo que enviar
+        write(tuberia,buffer,1); // escribo en la tubería lo que acabo de leer
+    }
+
+    close(tuberia);
+}
+
+void crearArchivosDestino(int tuberia, const char *nombre, int i) {
+    char buffer[1];
+    
+    char nombreDestino[200];
+    sprintf(nombreDestino,"%s.h%02d",nombre,i); // %s: inserta una cadena || %02d: inserta un entero con dos dígitos
+
+    int fdDestino = creat(nombreDestino,0666); // 0666: solo lectura-escritura pero no ejecutable
+
+    if (fdDestino < 0) {
+        perror("Error al crear el archivo destino");
+        close(tuberia);
+        exit(1);
+    }
+
+    while (read(tuberia,buffer,1) > 0) { // hijo recibe los bytes del padre (el FRAGMENTO enviado en el pipe)
+        write(fdDestino,buffer,1); // Mientras va leyendo va escribiendo en el fichero destino
+    }
+
+    close(fdDestino);
+    close(tuberia);
+    exit(0); // pasamos al siguiente hijo (fragmento del archivo)
+}
+
 int main(int argc, char *argv[]) {
 
     char *nombre;
@@ -81,39 +115,13 @@ int main(int argc, char *argv[]) {
                 bytesEnviar = bytesRestantes; // mando al pipe el restante (que es menor al tamaño de los fragmentos)
             }
 
-            char buffer[1]; // envío bytes uno a uno
-
-            for (int i=0; i<bytesEnviar; i++) {
-                read(fdOrigen,buffer,1); // leo lo que tengo que enviar
-                write(tub[1],buffer,1); // escribo en la tubería lo que acabo de leer
-            }
-
-            close(tub[1]);
+            enviarFragmento(fdOrigen,tub[1],bytesEnviar);
         }
         else { // HIJOS
             close(tub[1]); // cierro la parte de escritura de la tubería (HIJO NO ESCRIBE)
             close(fdOrigen);  // El hijo no utiliza el archivo original
             
-            char buffer[1];
-
-            char nombreDestino[200];
-            sprintf(nombreDestino,"%s.h%02d",nombre,i); // %s: inserta una cadena || %02d: inserta un entero con dos dígitos
-
-            int fdDestino = creat(nombreDestino,0666); // 0666: solo lectura-escritura pero no ejecutable
-
-            if (fdDestino < 0) {
-                perror("Error al crear el archivo destino");
-                close(tub[0]);
-                exit(EXIT_FAILURE);
-            }
-
-            while (read(tub[0],buffer,1) > 0) { // hijo recibe los bytes del padre (el FRAGMENTO enviado en el pipe)
-                write(fdDestino,buffer,1); // Mientras va leyendo va escribiendo en el fichero destino
-            }
-
-            close(fdDestino);
-            close(tub[0]);
-            exit(0); // pasamos al siguiente hijo (fragmento del archivo)
+            crearArchivosDestino(tub[0],nombre,i);
         }   
     }
 
