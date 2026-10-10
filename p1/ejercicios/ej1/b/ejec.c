@@ -9,11 +9,19 @@
 
 pid_t pidEjec, pidA, pidB, pidX, pidY, pidZ; // Variables globales para que los manejadores tengan acceso a ellas
 
+void comprobarFork(pid_t pid, const char *proceso) {
+    if (pid == -1) {
+        perror(proceso);
+        exit(1);
+    }
+}
+
+/* REUTILIZADO DE MALLA.C */
 int leerArgumento(int nArgs, char *args[]) {
     int tiempo;
 
-    if (nArgs != 2) {
-        printf("Error. Debes introducir argumento de tiempo\n");
+    if (nArgs != 2 || atoi(args[1]) <= 0) {
+        printf("Error. Debes introducir argumento de tiempo > 0\n");
         exit(1);
     }
     else {
@@ -23,18 +31,31 @@ int leerArgumento(int nArgs, char *args[]) {
     return tiempo;
 }
 
-void manejadorEjec(int sig) { // Inicia la cascada de destrucción
-    kill(pidA, SIGUSR2);
-}
+void despertar(int sig) {} // Despertar a los procesos
 
-void manejadorA(int sig) {
-    if (fork() == 0) { // Para que haga otro hijo y desde ahí se ejecute el "pstree"
-        execlp("pstree","pstree","-c",NULL);
+void lanzarPstree() { // Ejecutar el pstree -c
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error en fork");
         exit(1);
     }
-    wait(NULL); // Para que A espere a que termine pstree
+    else if (pid == 0) { // Hijo que ejecuta pstree -c
+        char buffer[20];
+        sprintf(buffer, "%d", pidEjec);
+        execlp("pstree","pstree","-c",buffer,NULL);
+        perror("Ejecución pstree");
+        exit(1);
+    }
+    pid_t fin; // Para que A espere a que termine pstree
+    do {
+        fin = wait(NULL); // wait recoge a CUALQUIER hijo: repito hasta que sea pstree
+    } while (fin != pid && fin != -1);
+}
 
-    kill(pidEjec, SIGUSR2); // Avisa a "ejec"
+/* HANDLERS */
+void manejadorEjec(int sig) {
+    // Inicia la cascada de destrucción
+    kill(pidA, SIGUSR2);
 }
 
 void manejadorAB(int sig) {
@@ -53,119 +74,129 @@ void manejadorB(int sig) {
     wait(NULL); // Despierta y recoge a X
 }
 
-void manejadorZ(int sig) { // Necesito manejador para que Z no muera antes de enviar la señal
+void manejadorZ(int sig) { 
+    // Necesito manejador para que Z no muera antes de enviar la señal
     kill(pidA, SIGUSR1); // ENVÍO DE SEÑAL A "A" CON LA ALARMA
 }
 
-void manejador(int sig) {
-    // Para que los procesos despierten del pause()
+/* PROCESOS */
+void procesoEjec() {
+    printf("Soy el proceso ejec: mi pid es %d\n", pidEjec);
+
+    signal(SIGUSR2, manejadorEjec);
+
+    wait(NULL);
+    printf("Soy ejec(%d) y muero\n", getpid());
+    exit(0);
 }
 
-int main(int argc, char *argv[]) {
-
-    int tiempo = leerArgumento(argc,argv);
-
-    /* ESTRUCTURA VERTICAL */
-
-    pidEjec = getpid(); // Guardo el PID de Ejec en su variable
+void procesoA() {
+    printf("Soy el proceso A: mi pid es %d. Mi padre es %d\n", pidA, pidEjec);
     
-    pidA = fork(); // Creo el proceso A 
-    if (pidA == -1) {
-        perror("Error en fork");
-        exit(1);
-    }
-    else if (pidA > 0) { // PID > 0: PADRE
-        // ejec
-        
-        printf("Soy el proceso ejec: mi pid es %d\n", pidEjec);
+    signal(SIGUSR1, despertar); // CAPTURA DE SEÑAL --> Hace "pstree -c" y Avisa a ejec
+    pause();
+    
+    lanzarPstree();
 
-        signal(SIGUSR2, manejadorEjec);
+    signal(SIGUSR2, manejadorAB); // Avisa a B
+    kill(pidEjec, SIGUSR2); // Avisa a "ejec"
+    
+    wait(NULL); // Espera a que termine B
+    printf("Soy A(%d) y muero\n", getpid());
+    exit(0);
+}
 
-        wait(NULL);
-        printf("Soy ejec(%d) y muero\n", getpid());
-        exit(0);
-    }
-    // A
-    pidA = getpid(); // Guardo el PID de A en su variable
+void procesoX() {
+    printf("Soy el proceso X: mi pid es %d. Mi padre es %d. Mi abuelo es %d. Mi bisabuelo es %d\n", getpid(), pidB, pidA, pidEjec);
+    signal(SIGUSR2, despertar);
+    pause();
 
-    pidB = fork(); // Creo el proceso B
-    if (pidB == -1) {
-        perror("Error en fork");
-        exit(1);
-    }
-    else if (pidB > 0) {
-        // A
-        printf("Soy el proceso A: mi pid es %d. Mi padre es %d\n", pidA, pidEjec);
-        
-        signal(SIGUSR1, manejadorA); // CAPTURA DE SEÑAL --> Hace "pstree -c" y Avisa a ejec
-        signal(SIGUSR2, manejadorAB); // Avisa a B
+    printf("Soy X(%d) y muero\n", getpid());
+    exit(0);
+}
 
-        wait(NULL); // Espera a que termine B
+void procesoY() {
+    printf("Soy el proceso Y: mi pid es %d. Mi padre es %d. Mi abuelo es %d. Mi bisabuelo es %d\n", getpid(), pidB, pidA, pidEjec);
+    signal(SIGUSR2, despertar);
+    pause();
 
-        printf("Soy A(%d) y muero\n", getpid());
-        exit(0);
-    }
-    // B
-    pidB = getpid(); // Guardo el PID de B en su variable
+    printf("Soy Y(%d) y muero\n", getpid());
+    exit(0);
+}
+
+void procesoZ(int tiempo) {
+    printf("Soy el proceso Z: mi pid es %d. Mi padre es %d. Mi abuelo es %d. Mi bisabuelo es %d\n", getpid(), pidB, pidA, pidEjec);
+
+    signal(SIGALRM, manejadorZ);
+    signal(SIGUSR2, despertar);
+
+    alarm(tiempo);
+    pause(); // esperar la alarma
+    pause(); // esperar la señal de B para morir
+    
+    printf("\nSoy Z(%d) y muero\n", getpid());
+    exit(0);
+}
+
+void procesoB(int tiempo) {
     printf("Soy el proceso B: mi pid es %d. Mi padre es %d. Mi abuelo es %d\n", pidB, pidA, pidEjec);
 
     signal(SIGUSR2, manejadorB); // Espera la orden de A
     
-    /* ESTRUCTURA HORIZONTAL */
-
+    // X
     pidX = fork(); // Creo el proceso X
-    if (pidX == -1) {
-        perror("Error en fork");
-        exit(1);
+    comprobarFork(pidX, "Error en fork de X");
+    if (pidX == 0) {
+        procesoX();
     }
-    else if (pidX == 0) {
-        // X
-        printf("Soy el proceso X: mi pid es %d. Mi padre es %d. Mi abuelo es %d. Mi bisabuelo es %d\n", getpid(), pidB, pidA, pidEjec);
-        signal(SIGUSR2, manejador);
-        pause();
-
-        printf("Soy X(%d) y muero\n", getpid());
-        exit(0);
+    
+    // Y
+    pidY = fork(); // Creo el proceso Y
+    comprobarFork(pidY, "Error en fork de Y");
+    if (pidY == 0) {
+        procesoY();
     }
-    // B
-
-    pidY = fork();
-    if (pidY == -1) {
-        perror("Error en fork");
-        exit(1);
+    
+    // Z
+    pidZ = fork(); // Creo el proceso Z
+    comprobarFork(pidZ, "Error en fork de Z");
+    if (pidZ == 0) {
+        procesoZ(tiempo);
     }
-    else if (pidY == 0) {
-        // Y
-        printf("Soy el proceso Y: mi pid es %d. Mi padre es %d. Mi abuelo es %d. Mi bisabuelo es %d\n", getpid(), pidB, pidA, pidEjec);
-        signal(SIGUSR2, manejador);
-        pause();
-        
-        printf("Soy Y(%d) y muero\n", getpid());
-        exit(0);
-    }
-    // B
-
-    pidZ = fork();
-    if (pidZ == -1) {
-        perror("Error en fork");
-        exit(1);
-    }
-    else if (pidZ == 0) {
-        // Z
-        printf("Soy el proceso Z: mi pid es %d. Mi padre es %d. Mi abuelo es %d. Mi bisabuelo es %d\n", getpid(), pidB, pidA, pidEjec);
-        signal(SIGALRM, manejadorZ);
-        signal(SIGUSR2, manejador);
-
-        alarm(tiempo);
-        pause(); // esperar la alarma
-        pause(); // esperar la señal de B para morir
-        
-        printf("\nSoy Z(%d) y muero\n", getpid());
-        exit(0);
-    }
-    // B
-
-    wait(NULL); // Espero a que se mueran los hijos
+    
+    wait(NULL); // B espera a que se mueran los hijos
     printf("Soy B(%d) y muero\n", getpid());
     exit(0);
+}
+
+/* MAIN */
+int main(int argc, char *argv[]) {
+
+    int tiempo = leerArgumento(argc,argv);
+
+    /* ESTRUCTURA VERTICAL: ejec --> A --> B */
+    
+    // ejec
+    pidEjec = getpid(); // Guardo el PID de Ejec
+    pidA = fork(); // Creo el proceso A
+    comprobarFork(pidA, "Error en fork de A");
+    if (pidA > 0) {
+        // ejec
+        procesoEjec();
+    }
+    
+    // A
+    pidA = getpid(); // Guardo el PID de A
+    pidB = fork(); // Creo el proceso B
+    comprobarFork(pidB, "Error en fork de B");
+    if (pidB > 0) {
+        // A
+        procesoA();
+    }
+    
+    /* ESTRUCTURA HORIZONTAL: B --> {X, Y, Z} */
+
+    // B
+    pidB = getpid(); // Guardo el PID de B
+    procesoB(tiempo);
 }
