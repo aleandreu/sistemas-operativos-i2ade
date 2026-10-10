@@ -20,7 +20,7 @@ void leerArgumentos(int nArgs, char *args[], int *x, int *y) {
     }
 }
 
-void despertar(int sig) {}; // Para despertar a los procesos tras el pause();
+void despertar(int sig) {} // Para despertar a los procesos tras el pause();
 
 void manejadorAlarm(int sig) { // Para avisar al padre de que empiece a matar
     kill(pidMalla,SIGUSR1);
@@ -75,6 +75,7 @@ void creaVertical(int nfilas, int esUltimaColumna) { // crear columnas
     if (esUltimaColumna) { // Último proceso de toda la malla (uso ultimaColumna como si fuera un "bool")
         signal(SIGALRM, manejadorAlarm);
         alarm(1); // tras 1s envía SIGUSR1 al superpadre
+        pause();
     }
 
     pause(); // Espero señal del padre vertical
