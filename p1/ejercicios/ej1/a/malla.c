@@ -1,4 +1,4 @@
-// Ejercicio 1. a) malla.c // REVISAR CASO ./MALLA 1 5
+// Ejercicio 1. a) malla.c
 
 #include <stdio.h>  // printf, perror
 #include <stdlib.h> // exit, atoi, malloc, free
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
     pid_t pids[ncolumnas];
     creaHorizontal(ncolumnas, nfilas, pids); // La malla crea la primera fila (hijos)
 
-    pause(); // super padre esperaS
+    pause(); // super padre espera
     lanzarPstree();
 
     matarProcesos(ncolumnas, pids);
