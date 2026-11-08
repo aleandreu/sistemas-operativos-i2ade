@@ -1,0 +1,36 @@
+/* Ejercicio 2. concurrencia.cm (entorno JBACI) */
+
+#define tamanyo_buffer N
+semaphore s, c, p;
+
+void productor() {
+    while (true) {
+        producir();
+        P(p); /* Desbloquear tras "n" veces */
+        P(s);
+        anyadir_buffer();
+        V(s);
+        V(c);
+    }
+}
+
+void consumidor() {
+    while (true) {
+        P(c);
+        P(s);
+        coger_buffer();
+        v(s);
+        v(p); /* Desbloquear al productor */
+        consumir();
+    }
+}
+
+void main() {
+    inicializar(s,1);
+    inicializar(n,0);
+    inicializar(p,N);
+    cobegin {
+        productor();
+        consumidor();
+    }
+}
