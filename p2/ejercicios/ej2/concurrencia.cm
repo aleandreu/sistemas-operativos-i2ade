@@ -1,34 +1,50 @@
 /* Ejercicio 2. concurrencia.cm (entorno JBACI) */
 
-#define tamanyo_buffer N
+const int N = 10;
 semaphore s, c, p;
 
+void producir() {
+    /* Generar producto */
+}
+
+void anyadir_buffer() {
+    /* Insertar producto en el buffer */
+}
+
+void coger_buffer() {
+    /* Extraer producto del buffer */
+}
+
+void consumir() {
+    /* Consumir producto */
+}
+
 void productor() {
-    while (true) {
+    while (1) {
         producir();
-        P(p); /* Desbloquear tras "n" veces */
-        P(s);
+        wait(p); /* Desbloquear tras "n" veces */
+        wait(s);
         anyadir_buffer();
-        V(s);
-        V(c);
+        signal(s);
+        signal(c);
     }
 }
 
 void consumidor() {
-    while (true) {
-        P(c);
-        P(s);
+    while (1) {
+        wait(c);
+        wait(s);
         coger_buffer();
-        v(s);
-        v(p); /* Desbloquear al productor */
+        signal(s);
+        signal(p); /* Desbloquear al productor */
         consumir();
     }
 }
 
 void main() {
-    inicializar(s,1);
-    inicializar(n,0);
-    inicializar(p,N);
+    initialsem(s,1);
+    initialsem(c,0);
+    initialsem(p,N);
     cobegin {
         productor();
         consumidor();
