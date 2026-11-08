@@ -1,0 +1,15 @@
+/* Ejercicio 2. gdefs.cm (entorno JBACI) */
+/* Para utilizar la interfaz grafica */
+
+const int RED = 1;
+const int BLACK = 2;
+const int BLUE = 3;
+const int YELLOW = 4;
+const int GREEN = 5;
+const int MAGENTA = 6;
+const int WHITE = 7;
+
+const int CIRCLE = 1;
+const int LINE = 2;
+const int RECTANGLE = 3;
+const int TRIANGLE = 4;

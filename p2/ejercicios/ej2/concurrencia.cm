@@ -1,22 +1,42 @@
 /* Ejercicio 2. concurrencia.cm (entorno JBACI) */
 
-const int N = 10;
+#include "gdefs.cm"
+
+const int BUFFER_X = 100;
+const int BUFFER_Y = 200;
+
+const int N = 3;
 semaphore s, c, p;
 
+int buffer[N];
+int entrada = 0;
+int salida = 0;
+int dato = 1; // Numero a meter
+
 void producir() {
-    /* Generar producto */
+    cout << "Produce " << dato << endl;
 }
 
 void anyadir_buffer() {
-    /* Insertar producto en el buffer */
+    buffer[entrada] = dato;
+    moveby(entrada + 1, 0, -20);
+    entrada = (entrada+1) % N;
+    dato = dato+1;
 }
 
-void coger_buffer() {
-    /* Extraer producto del buffer */
+int coger_buffer() {
+    int extraido;
+
+    extraido = buffer[salida];
+    buffer[salida] = 0;
+    moveby(salida + 1, 0, 20);
+    salida = (salida+1) % N;
+
+    return extraido;
 }
 
-void consumir() {
-    /* Consumir producto */
+void consumir(int extraido) {
+    cout << "Consume " << extraido << endl;
 }
 
 void productor() {
@@ -31,20 +51,34 @@ void productor() {
 }
 
 void consumidor() {
+    int extraido;
+
     while (1) {
         wait(c);
         wait(s);
-        coger_buffer();
+        extraido = coger_buffer();
         signal(s);
         signal(p); /* Desbloquear al productor */
-        consumir();
+        consumir(extraido);
+    }
+}
+
+void crear_buffer_grafico() {
+    int i;
+
+    for (i = 0; i < N; i = i + 1) {
+        create(i + 1, RECTANGLE, BLUE,
+               BUFFER_X + i * 40, BUFFER_Y, 30, 30);
     }
 }
 
 void main() {
-    initialsem(s,1);
-    initialsem(c,0);
-    initialsem(p,N);
+    initialsem(s,1); /* Seccion critica */
+    initialsem(c,0); /* Elementos. buffer vacio = bloquea al consumidor */
+    initialsem(p,N); /* Huecos. buffer lleno = bloquea al productor */
+
+    crear_buffer_grafico();
+
     cobegin {
         productor();
         consumidor();
