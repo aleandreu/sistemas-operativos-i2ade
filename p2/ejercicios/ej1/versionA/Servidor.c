@@ -1,0 +1,108 @@
+// Ejercicio 1. Version A) Servidor.c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <fcntl.h> // Para open
+#include <sys/types.h> // Para pid_t
+#include <sys/wait.h> // Para wait
+#include <signal.h> // Para signal y SIGCHLD
+
+#include <sys/socket.h> // Para socket -> struct sockaddr
+#include <netinet/in.h> // Para bind -> struct in_addr || struct sockaddr_in(campo in_addr)
+
+#define PUERTO 9999
+// PREGUNTAR WAITPID
+
+int crear_socket_escucha() {
+    int sock;
+    struct sockaddr_in dir;
+
+    sock = socket(AF_INET, SOCK_STREAM, 0); // 1. crear canal (socket): IPv4 (AF_INET), TCP (SOCK_STREAM)
+    if (sock<0) {
+        perror("Error en socket");
+        exit(1);
+    }
+
+    dir.sin_family = AF_INET;
+    dir.sin_port = htons(PUERTO);
+    dir.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (bind(sock,(struct sockaddr *)&dir, sizeof(dir))<0) { // 2. publicar la direccion (bind)
+        perror("Error en bind");
+        exit(1);
+    }
+    if (listen(sock,5)<0) { // 3. ponerse a escuchar (listen)
+        perror("listen");
+        exit(1);
+    }
+
+    return sock;
+}
+
+void comprobar_error(int descriptor, const char *mensaje) {
+    if (descriptor < 0) {
+        perror(mensaje);
+        exit(1);
+    }
+}
+
+int abrir_archivo(const char* nombre) {
+    int fd = open(nombre, O_RDONLY);
+    comprobar_error(fd, "Error en open");
+    return fd;
+}
+
+void leer_archivo(int fd_origen, int fd_destino) {
+    char buffer[4096];
+    ssize_t leidos;
+
+    while ((leidos = read(fd_origen,buffer,sizeof(buffer))) > 0) {
+        write(fd_destino, buffer, leidos);
+    }
+
+    comprobar_error(leidos, "Error en read");
+}
+
+void servir_desde_archivo(int fd_cliente, const char* nombre) {
+    sleep(10);
+    int fd_archivo = abrir_archivo(nombre);
+
+    leer_archivo(fd_archivo, fd_cliente);
+
+    close(fd_archivo);
+    close(fd_cliente);
+}
+
+void atender_cliente(int escucha, int conexion, const char *nombre) {
+    pid_t pid = fork();
+    comprobar_error(pid, "Error en fork");
+    if (pid == 0) { // HIJO
+        close(escucha);
+        servir_desde_archivo(conexion, nombre);
+        exit(0); // matar al hijo
+    }
+    else { // PADRE
+        close(conexion);
+    }
+}
+
+void manejador_hijos(int sig) {
+    while (waitpid(-1, NULL, WNOHANG) > 0) {} // recoger hijos terminados
+}
+
+int main() {
+    int escucha, conexion;
+    const char *nombre = "Google.html";
+
+    escucha = crear_socket_escucha();
+
+    signal(SIGCHLD, manejador_hijos);
+    while (1) {
+        conexion = accept(escucha, NULL, NULL); // 4. bloquea hasta que llegue un cliente (accept)
+        comprobar_error(conexion, "Error en accept");
+
+        atender_cliente(escucha, conexion, nombre);
+    }
+}
