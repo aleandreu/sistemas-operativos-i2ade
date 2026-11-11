@@ -6,14 +6,11 @@
 
 #include <fcntl.h> // Para open
 #include <sys/types.h> // Para pid_t
-#include <sys/wait.h> // Para wait
-#include <signal.h> // Para signal y SIGCHLD
 
 #include <sys/socket.h> // Para socket -> struct sockaddr
 #include <netinet/in.h> // Para bind -> struct in_addr || struct sockaddr_in(campo in_addr)
 
 #define PUERTO 9999
-// PREGUNTAR WAITPID
 
 void comprobar_error(int descriptor, const char *mensaje) {
     if (descriptor < 0) {
@@ -84,17 +81,12 @@ void atender_cliente(int escucha, int conexion, const char *nombre) {
     }
 }
 
-void manejador_hijos(int sig) {
-    while (waitpid(-1, NULL, WNOHANG) > 0) {} // recoger hijos terminados
-}
-
 int main() {
     int escucha, conexion;
     const char *nombre = "Google.html";
 
     escucha = crear_socket_escucha();
 
-    signal(SIGCHLD, manejador_hijos);
     while (1) {
         conexion = accept(escucha, NULL, NULL); // 4. bloquea hasta que llegue un cliente (accept)
         comprobar_error(conexion, "Error en accept");
