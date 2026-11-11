@@ -15,37 +15,35 @@
 #define PUERTO 9999
 // PREGUNTAR WAITPID
 
-int crear_socket_escucha() {
-    int sock;
-    struct sockaddr_in dir;
-
-    sock = socket(AF_INET, SOCK_STREAM, 0); // 1. crear canal (socket): IPv4 (AF_INET), TCP (SOCK_STREAM)
-    if (sock<0) {
-        perror("Error en socket");
-        exit(1);
-    }
-
-    dir.sin_family = AF_INET;
-    dir.sin_port = htons(PUERTO);
-    dir.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    if (bind(sock,(struct sockaddr *)&dir, sizeof(dir))<0) { // 2. publicar la direccion (bind)
-        perror("Error en bind");
-        exit(1);
-    }
-    if (listen(sock,5)<0) { // 3. ponerse a escuchar (listen)
-        perror("listen");
-        exit(1);
-    }
-
-    return sock;
-}
-
 void comprobar_error(int descriptor, const char *mensaje) {
     if (descriptor < 0) {
         perror(mensaje);
         exit(1);
     }
+}
+
+void rellenar_dir_servidor(struct sockaddr_in *dir) {
+    dir->sin_family = AF_INET;
+    dir->sin_port = htons(PUERTO);
+    dir->sin_addr.s_addr = htonl(INADDR_ANY);
+}
+
+int crear_socket_escucha() {
+    int sock;
+    struct sockaddr_in dir = {0};
+
+    sock = socket(AF_INET, SOCK_STREAM, 0); // 1. crear canal (socket): IPv4 (AF_INET), TCP (SOCK_STREAM)
+    comprobar_error(sock, "Error en socket");
+
+    rellenar_dir_servidor(&dir);
+
+    // 2. publicar la direccion (bind)
+    comprobar_error(bind(sock,(struct sockaddr *)&dir, sizeof(dir)), "Error en bind");
+
+    // 3. ponerse a escuchar (listen)
+    comprobar_error(listen(sock,5), "Error en listen");
+
+    return sock;
 }
 
 int abrir_archivo(const char* nombre) {
@@ -61,12 +59,10 @@ void leer_archivo(int fd_origen, int fd_destino) {
     while ((leidos = read(fd_origen,buffer,sizeof(buffer))) > 0) {
         write(fd_destino, buffer, leidos);
     }
-
     comprobar_error(leidos, "Error en read");
 }
 
 void servir_desde_archivo(int fd_cliente, const char* nombre) {
-    sleep(10);
     int fd_archivo = abrir_archivo(nombre);
 
     leer_archivo(fd_archivo, fd_cliente);
