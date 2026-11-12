@@ -1,4 +1,4 @@
-// Ejercicio 1. Version A) Servidor.c
+// Ejercicio 1. Servidor.c
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,7 +6,6 @@
 
 #include <fcntl.h> // Para open
 #include <sys/types.h> // Para pid_t
-
 #include <sys/socket.h> // Para socket -> struct sockaddr
 #include <netinet/in.h> // Para bind -> struct in_addr || struct sockaddr_in(campo in_addr)
 

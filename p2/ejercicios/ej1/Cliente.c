@@ -11,9 +11,9 @@
 
 #define PUERTO 9999
 
-void comprobar_args(int argc) {
+void comprobar_args(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("Error en argumentos\n");
+        printf("Uso: %s <IP del servidor>\n", argv[0]);
         exit(1);
     }
 }
@@ -59,7 +59,7 @@ void recibir_mostrar(int fd) {
 int main(int argc, char *argv[]) {
     int fd;
 
-    comprobar_args(argc);
+    comprobar_args(argc, argv);
 
     fd = conectar_a_servidor(argv[1]);
     recibir_mostrar(fd);
