@@ -1,4 +1,4 @@
-// Ejercicio 1. Servidor.c_extended (parte opcional)
+// Ejercicio 1. Servidor_extended.c (parte opcional)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +19,6 @@ void comprobar_error(int descriptor, const char *mensaje) {
     }
 }
 
-/* Funciones para la parte opcional */
 int conectar_google() {
     struct addrinfo hints = {0}, *res;
     int sock;
@@ -106,7 +105,6 @@ void atender_cliente(int escucha, int conexion) {
 
 int main() {
     int escucha, conexion;
-
     escucha = crear_socket_escucha();
 
     while (1) {

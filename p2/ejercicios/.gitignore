@@ -1,5 +1,5 @@
-*.pco
-*.lst
+concurrencia.pco
+concurrencia.lst
 Servidor
 Cliente
 Servidor_extended

@@ -5,6 +5,9 @@
 const int BUFFER_X = 100;
 const int BUFFER_Y = 200;
 
+const int PRODUCTOR_ID = 100;
+const int CONSUMIDOR_ID = 101;
+
 const int N = 3;
 semaphore s, c, p;
 
@@ -19,7 +22,7 @@ void producir() {
 
 void anyadir_buffer() {
     buffer[entrada] = dato;
-    moveby(entrada + 1, 0, -20);
+    changecolor(entrada + 1, YELLOW);
     entrada = (entrada+1) % N;
     dato = dato+1;
 }
@@ -29,7 +32,7 @@ int coger_buffer() {
 
     extraido = buffer[salida];
     buffer[salida] = 0;
-    moveby(salida + 1, 0, 20);
+    changecolor(salida + 1, BLUE);
     salida = (salida+1) % N;
 
     return extraido;
@@ -44,7 +47,11 @@ void productor() {
         producir();
         wait(p); /* Desbloquear tras "n" veces */
         wait(s);
+
+        changecolor(PRODUCTOR_ID, WHITE);
         anyadir_buffer();
+        changecolor(PRODUCTOR_ID, GREEN);
+
         signal(s);
         signal(c);
     }
@@ -56,7 +63,11 @@ void consumidor() {
     while (1) {
         wait(c);
         wait(s);
+
+        changecolor(CONSUMIDOR_ID, WHITE);
         extraido = coger_buffer();
+        changecolor(CONSUMIDOR_ID, RED);
+        
         signal(s);
         signal(p); /* Desbloquear al productor */
         consumir(extraido);
@@ -67,15 +78,16 @@ void crear_buffer_grafico() {
     int i;
 
     for (i = 0; i < N; i = i + 1) {
-        create(i + 1, RECTANGLE, BLUE,
-               BUFFER_X + i * 40, BUFFER_Y, 30, 30);
+        create(i + 1, RECTANGLE, BLUE, BUFFER_X + i * 40, BUFFER_Y, 30, 30);
     }
+    create(PRODUCTOR_ID, CIRCLE, GREEN, BUFFER_X - 60, BUFFER_Y, 30, 30);
+    create(CONSUMIDOR_ID, CIRCLE, RED, BUFFER_X + N * 40 + 30, BUFFER_Y, 30, 30);
 }
 
 void main() {
     initialsem(s,1); /* Seccion critica */
-    initialsem(c,0); /* Elementos. buffer vacio = bloquea al consumidor */
-    initialsem(p,N); /* Huecos. buffer lleno = bloquea al productor */
+    initialsem(c,0);
+    initialsem(p,N);
 
     crear_buffer_grafico();
 

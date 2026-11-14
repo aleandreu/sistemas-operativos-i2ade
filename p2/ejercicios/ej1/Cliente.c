@@ -58,7 +58,6 @@ void recibir_mostrar(int fd) {
 
 int main(int argc, char *argv[]) {
     int fd;
-
     comprobar_args(argc, argv);
 
     fd = conectar_a_servidor(argv[1]);
